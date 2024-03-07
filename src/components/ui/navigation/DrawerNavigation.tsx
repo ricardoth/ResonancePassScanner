@@ -29,7 +29,7 @@ function DrawerNavigation() {
             </Drawer.Group>
          
             <Drawer.Screen name="Details" component={DetailsScreen} options={{
-                title: 'Detalles',
+                title: 'Tickets',
                 headerStyle: {
                 backgroundColor: '#FFCA2C',
                 },
