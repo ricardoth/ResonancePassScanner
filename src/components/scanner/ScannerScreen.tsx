@@ -7,6 +7,7 @@ import axios from 'axios';
 import { basicAuth } from '../../types/BasicAuth';
 import { Buffer } from 'buffer';
 import { CustomAlert } from '../ui/alerts/CustomAlert';
+import { ScannerScreenProps } from '../../types/RootTypes';
 
 const key: string = "claveAESparaDerivar";
 const iv: string = "claveAESparaDerivar";
@@ -15,12 +16,14 @@ const passBasicAuth: string = basicAuth.password;
 
 const URL_VALIDAR_ACCESO_TICKET: string = `${environment.URL_API_DECIMATIO}TicketScanner/ValidarAccesoTicket`;
 
-export const ScannerScreen = () => {
+
+export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}) => {
     const [ contentQR, setContentQR ] = useState('');
     const [isAlertVisible, setIsAlertVisible] = useState<boolean>(false);
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
     const [messageText, setMessageText] = useState('');
     const [ isActiveCamera, setIsActiveCamera ] = useState(false);
+    const { itemId } = route.params;
 
     const showSuccessAlert = () => {
         setAlertType('success');
@@ -45,6 +48,14 @@ export const ScannerScreen = () => {
                 dv: splitter[1]
             };
 
+            if (body.idEvento !== itemId) {
+                setMessageText('El Ticket no corresponde al evento, por favor ingrese un ticket válido');
+                showErrorAlert();
+                setIsActiveCamera(false);
+                setContentQR(''); 
+                return;
+            }
+
             let response = await axios.post(URL_VALIDAR_ACCESO_TICKET, body, {
                 headers: {
                     Authorization: `Basic ${Buffer.from(`${userBasicAuth}:${passBasicAuth}`).toString('base64')}`,
@@ -58,17 +69,13 @@ export const ScannerScreen = () => {
                 showErrorAlert();
             }
             setIsActiveCamera(false);
-            // console.log(contentQR)
             setContentQR('');
-
-            // console.log(contentQR)
         } catch (error: any) {
             console.log(error)
         }
     }
 
     useEffect(() => {
-        console.log(contentQR)
         if(contentQR != '') {
             const decryptado: string | null = decrypAES(contentQR, key);
             if (decryptado === null) {
@@ -76,7 +83,6 @@ export const ScannerScreen = () => {
                 showErrorAlert();
             } else {
                 validarAccesoTicket(decryptado);
-
             }
         }
     }, [ contentQR ])
