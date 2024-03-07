@@ -13,9 +13,7 @@ const key: string = "claveAESparaDerivar";
 const iv: string = "claveAESparaDerivar";
 const userBasicAuth: string = basicAuth.username;
 const passBasicAuth: string = basicAuth.password;
-
 const URL_VALIDAR_ACCESO_TICKET: string = `${environment.URL_API_DECIMATIO}TicketScanner/ValidarAccesoTicket`;
-
 
 export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}) => {
     const [ contentQR, setContentQR ] = useState('');
@@ -126,7 +124,6 @@ export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}
                 type={alertType}
                 messageText={messageText}
             />
-
         </View>
     )
 }

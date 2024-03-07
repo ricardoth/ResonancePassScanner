@@ -1,27 +1,36 @@
-import { RouteProp } from "@react-navigation/native";
+import { DrawerNavigationProp } from "@react-navigation/drawer";
+import { ParamListBase, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-type RootStackParamList = {
+// export type RootDrawerParamList = {
+//     Home: undefined;
+//     Details: undefined;
+//     Scanner: {itemId: string | null};
+// };
+
+export type RootStackParamList = {
+    HomeScreen: undefined;
+    Scanner: {itemId: string | null};
+
+  };
+  
+  export type RootDrawerParamList = {
     Home: undefined;
     Details: undefined;
     Scanner: {itemId: string | null};
+  };
+  
+  
+export type HomeScreenProps = {
+    navigation: DrawerNavigationProp<RootDrawerParamList, 'Home'>;
 };
-
-type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
-
-export interface HomeScreenProps {
-    navigation: HomeScreenNavigationProp;
-}
-
-type DetailsScreenNavigationProps = NativeStackNavigationProp<RootStackParamList, 'Details'>;
-
-export interface DetailsScreenProps {
-    navigation: DetailsScreenNavigationProps;
-}
-
-type ScannerScreenNavigationProps = NativeStackNavigationProp<RootStackParamList, 'Scanner'>;
-
-export interface ScannerScreenProps {
+  
+export type DetailsScreenProps = {
+    navigation: DrawerNavigationProp<RootDrawerParamList, 'Details'>;
+};
+  
+export type ScannerScreenProps = {
+    navigation: NativeStackNavigationProp<RootStackParamList, 'Scanner'>;
     route: RouteProp<RootStackParamList, 'Scanner'>;
-    navigation: ScannerScreenNavigationProps;
 }
+

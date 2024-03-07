@@ -12,7 +12,6 @@ const userBasicAuth: string = basicAuth.username;
 const passBasicAuth: string = basicAuth.password;
 
 
-
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
     const [eventos, setEventos] = useState([]);
     const [ selectedEvento, setSelectedEvento ] = useState<string | null>('');
@@ -48,9 +47,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
     }
 
     const handleNavigate = () => {
+        // navigation.navigate('Scanner', {
+        //     itemId: selectedEvento
+        // });
         navigation.navigate('Scanner', {
             itemId: selectedEvento
-        });
+        })
     }
 
     return (
