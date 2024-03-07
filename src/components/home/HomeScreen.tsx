@@ -13,7 +13,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
             style={styles.button}
             onPress={() => navigation.navigate('Scanner')}
         >
-            <Text style={styles.text}>Empiece el Escaneo</Text>
+            <Text style={styles.text}>Comencemos</Text>
         </TouchableOpacity>
       </View>
     );
