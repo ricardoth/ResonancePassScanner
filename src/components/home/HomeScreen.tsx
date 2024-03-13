@@ -47,9 +47,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
     }
 
     const handleNavigate = () => {
-        // navigation.navigate('Scanner', {
-        //     itemId: selectedEvento
-        // });
         navigation.navigate('Scanner', {
             itemId: selectedEvento
         })
