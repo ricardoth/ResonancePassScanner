@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import { DetailsScreenProps } from '../../types/RootTypes';
 import { environment } from '../../environment/environment.dev';
 import axios from 'axios';
 import { basicAuth } from '../../types/BasicAuth';
 import { Buffer } from 'buffer';
-import { ButtonIcon, Card, CloseIcon, ExternalLinkIcon, Icon } from '@gluestack-ui/themed';
+import { Card} from '@gluestack-ui/themed';
 import { formatDateHour } from '../../utils/formatDate';
 import { SpinnerLoader } from '../ui/spinner/SpinnerLoader';
 import Toast from 'react-native-toast-message';
+import { useFocusEffect } from '@react-navigation/native';
 
 const userBasicAuth: string = basicAuth.username;
 const passBasicAuth: string = basicAuth.password;
@@ -37,11 +38,15 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
     const [ loading, setLoading ] = useState(false);
     const [ refreshing, setRefreshing ] = useState(false); 
 
-    const fetchTickets = async (pageNum: any) => {
-        if ( loading || !hasMore) return;
+    const fetchTickets = async (pageNum: any, isRefreshing = false) => {
+        if (loading || (!hasMore && !isRefreshing)) return;
 
         try {
             setLoading(true);
+            if (isRefreshing) {
+                setTickets([]); 
+                setHasMore(true); 
+            }
             let response = await axios.get(`${URL_TICKETS}?PageSize=10&PageNumber=${pageNum}`, {
                 headers: {
                     Authorization: `Basic ${Buffer.from(`${userBasicAuth}:${passBasicAuth}`).toString('base64')}`,
@@ -50,7 +55,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
 
             const {data} = response.data;
             if (data.length > 0) {
-                setTickets(tickets.concat(data));
+                setTickets(prevTickets => isRefreshing ? data : prevTickets.concat(data));
                 setPage(pageNum + 1);
             } else {
                 setHasMore(false);
@@ -59,14 +64,29 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
         } catch (error: any) {
             console.log(error)
             setHasMore(false);
+        } finally {
             setLoading(false);
+            if (isRefreshing) {
+                setRefreshing(false);
+            }
         }
     }
 
+    useFocusEffect(
+        useCallback(() => {
+            fetchTickets(page, true);
+        }, [])
+    );
+
     useEffect(() => {
-        console.log('llamar')
-        fetchTickets(page);
-    }, [page]);
+        fetchTickets(page, true);
+    }, []);
+    
+    const handleLoadMore = () => {
+        if (!loading && hasMore) {
+            fetchTickets(page);
+        }
+    }
 
     const showToastOk = () => {
         Toast.show({
@@ -94,9 +114,9 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
 
             if (response.status === 200) {
                 showToastOk();
-                setTickets((prevState) => {
-                    return [...prevState];
-                })
+                setRefreshing(true); 
+                fetchTickets(1, true); 
+                setRefreshing(false); 
             } else {
                 showToastError();
             }
@@ -106,12 +126,9 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
         }
     }
 
-    const handleRefresh = () => {
+    const handleRefresh = async() => {
         setRefreshing(true);
-        setTickets([]);
-        fetchTickets(1);
-        setRefreshing(false)
-
+        await fetchTickets(1, true);
     }
 
     return (
@@ -237,7 +254,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
                         }
                         
                     }}
-                    onEndReached={() => fetchTickets(page)}
+                    onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.5}
                 />
             }
