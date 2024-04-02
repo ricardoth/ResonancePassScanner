@@ -8,6 +8,7 @@ import { basicAuth } from '../../types/BasicAuth';
 import { Buffer } from 'buffer';
 import { CustomAlert } from '../ui/alerts/CustomAlert';
 import { ScannerScreenProps } from '../../types/RootTypes';
+import { Toogle } from '../ui/toogle/Toogle';
 
 const key: string = "claveAESparaDerivar";
 const iv: string = "claveAESparaDerivar";
@@ -21,6 +22,7 @@ export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
     const [messageText, setMessageText] = useState('');
     const [ isActiveCamera, setIsActiveCamera ] = useState(false);
+    const [ isExtranjero, setIsExtranjero ] = useState(false);
     const { itemId } = route.params;
 
     const showSuccessAlert = () => {
@@ -35,16 +37,24 @@ export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}
 
     const validarAccesoTicket = async (paramText: string) => {
         try {
-          
+            let body;
             let obj = JSON.parse(paramText);
-            let rutDv = obj.RutUsuario;
-            let splitter = rutDv.split('-');
-            let body = {
-                idTicket: obj.IdTicket,
-                idEvento: obj.IdEvento,
-                rut: splitter[0],
-                dv: splitter[1]
-            };
+            if (isExtranjero) {
+                body = {
+                    idTicket: obj.IdTicket,
+                    idEvento: obj.IdEvento,
+                    email: obj.Correo,
+                };
+            } else {
+                let rutDv = obj.RutUsuario;
+                let splitter = rutDv.split('-');
+                body = {
+                    idTicket: obj.IdTicket,
+                    idEvento: obj.IdEvento,
+                    rut: splitter[0],
+                    dv: splitter[1]
+                };
+            }
 
             if (body.idEvento !== itemId) {
                 setMessageText('El Ticket no corresponde al evento, por favor ingrese un ticket válido');
@@ -87,6 +97,12 @@ export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}
 
     return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#212529' }}>
+            <Toogle 
+                isOn={isExtranjero}
+                onToogle={setIsExtranjero}
+                id={"toogleExtranjero"}
+            />
+
             <Text style={styles.header}>Scan QR Code</Text>
             {
                 !isActiveCamera && 

@@ -10,10 +10,12 @@ import { formatDateHour } from '../../utils/formatDate';
 import { SpinnerLoader } from '../ui/spinner/SpinnerLoader';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
+import { CustomDrowpdown } from '../ui/dropdown/CustomDrowpdown';
 
 const userBasicAuth: string = basicAuth.username;
 const passBasicAuth: string = basicAuth.password;
 const URL_TICKETS = `${environment.URL_API_DECIMATIO}TicketScanner`;
+const URL_EVENTOS = environment.URL_API_DECIMATIO + "Evento";
 
 type ListItem = {
     idAccesoEvento: number;
@@ -42,9 +44,10 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
         if (loading || (!hasMore && !isRefreshing)) return;
 
         try {
-            setLoading(true);
+            // setLoading(true);
             if (isRefreshing) {
                 setTickets([]); 
+                setPage(1);
                 setHasMore(true); 
             }
             let response = await axios.get(`${URL_TICKETS}?PageSize=10&PageNumber=${pageNum}`, {
@@ -55,17 +58,16 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
 
             const {data} = response.data;
             if (data.length > 0) {
-                setTickets(prevTickets => isRefreshing ? data : prevTickets.concat(data));
-                setPage(pageNum + 1);
+                setTickets(prevTickets => isRefreshing ? data : [...prevTickets, ...data]);
+                setPage(prevPage => isRefreshing ? 2 : prevPage + 1);
             } else {
                 setHasMore(false);
             }
-            setLoading(false);
         } catch (error: any) {
             console.log(error)
             setHasMore(false);
         } finally {
-            setLoading(false);
+            // setLoading(false);
             if (isRefreshing) {
                 setRefreshing(false);
             }
@@ -74,17 +76,16 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
 
     useFocusEffect(
         useCallback(() => {
+            setLoading(true);
             fetchTickets(page, true);
+            setLoading(false);
+            return () => {};
         }, [])
     );
-
-    useEffect(() => {
-        fetchTickets(page, true);
-    }, []);
     
-    const handleLoadMore = () => {
+    const handleLoadMore = async () => {
         if (!loading && hasMore) {
-            fetchTickets(page);
+            await fetchTickets(page);
         }
     }
 
@@ -126,9 +127,11 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
         }
     }
 
-    const handleRefresh = async() => {
+    const handleRefresh = async () => {
         setRefreshing(true);
+        setLoading(true);
         await fetchTickets(1, true);
+        setLoading(false);
     }
 
     return (
@@ -254,7 +257,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
                         }
                         
                     }}
-                    onEndReached={handleLoadMore}
+                    onEndReached={() => handleLoadMore()}
                     onEndReachedThreshold={0.5}
                 />
             }
