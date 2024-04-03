@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native'
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import { decrypAES } from '../../utils/decryptText';
 import { environment } from '../../environment/environment.dev';
@@ -43,7 +43,9 @@ export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}
                 body = {
                     idTicket: obj.IdTicket,
                     idEvento: obj.IdEvento,
-                    email: obj.Correo,
+                    correo: obj.Correo,
+                    esExtranjero: isExtranjero,
+                    dv: ""
                 };
             } else {
                 let rutDv = obj.RutUsuario;
@@ -51,6 +53,8 @@ export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}
                 body = {
                     idTicket: obj.IdTicket,
                     idEvento: obj.IdEvento,
+                    esExtranjero: isExtranjero,
+                    correo: obj.Correo,
                     rut: splitter[0],
                     dv: splitter[1]
                 };
@@ -97,13 +101,15 @@ export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}
 
     return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#212529' }}>
+            <Text style={styles.header}>Scan QR Code Ticket</Text>
+
+            <Text style={styles.text}>¿Es Extranjero?</Text>
             <Toogle 
                 isOn={isExtranjero}
                 onToogle={setIsExtranjero}
                 id={"toogleExtranjero"}
             />
 
-            <Text style={styles.header}>Scan QR Code</Text>
             {
                 !isActiveCamera && 
                 <TouchableOpacity 
@@ -149,6 +155,11 @@ const styles = StyleSheet.create({
         fontSize: 20,
         color: 'white',
         fontWeight: 'bold'
+    },
+    text: {
+        fontSize: 15,
+        color: 'white',
+        marginTop: 30
     },
     button: {
         backgroundColor: '#FFCA2C',

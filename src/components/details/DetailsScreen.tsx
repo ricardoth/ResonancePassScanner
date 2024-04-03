@@ -35,22 +35,50 @@ type ListItem = {
 
 export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
     const [tickets, setTickets] = useState([]);
+    const [eventos, setEventos] = useState([]);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
-    const [ loading, setLoading ] = useState(false);
-    const [ refreshing, setRefreshing ] = useState(false); 
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false); 
+    const [selectedEvento, setSelectedEvento] = useState<string | null>("");
 
-    const fetchTickets = async (pageNum: any, isRefreshing = false) => {
+    const fetchEventos = async () => {
+        try {
+            let response = await axios.get(`${URL_EVENTOS}`, {
+                headers: {
+                    Authorization: `Basic ${Buffer.from(`${userBasicAuth}:${passBasicAuth}`).toString('base64')}`,
+                }
+            });
+            const {data} = response.data;
+            let activos = data.filter((e: any) => e.activo === true);
+
+            const newOptions = activos.map((item: any) => ({
+                value: item.idEvento,
+                label: item.nombreEvento + ' - ' + item.lugar?.nombreLugar,
+            }));
+            setEventos(newOptions);
+        } catch (error: any) {
+            console.log(error)
+            setEventos([]);
+        }
+    }
+
+    const fetchTickets = async (pageNum: any, isRefreshing = false, eventoParam: any = null) => {
         if (loading || (!hasMore && !isRefreshing)) return;
 
         try {
-            // setLoading(true);
+            let URL = `${URL_TICKETS}?PageSize=10&PageNumber=${pageNum}`;
+            if(eventoParam !== null) {
+                URL = URL + `&IdEvento=${eventoParam}`;
+            }
+
             if (isRefreshing) {
                 setTickets([]); 
                 setPage(1);
                 setHasMore(true); 
             }
-            let response = await axios.get(`${URL_TICKETS}?PageSize=10&PageNumber=${pageNum}`, {
+
+            let response = await axios.get(URL, {
                 headers: {
                     Authorization: `Basic ${Buffer.from(`${userBasicAuth}:${passBasicAuth}`).toString('base64')}`,
                 }
@@ -67,7 +95,6 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
             console.log(error)
             setHasMore(false);
         } finally {
-            // setLoading(false);
             if (isRefreshing) {
                 setRefreshing(false);
             }
@@ -76,16 +103,21 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
 
     useFocusEffect(
         useCallback(() => {
-            setLoading(true);
-            fetchTickets(page, true);
-            setLoading(false);
+            // setLoading(true);
+            fetchEventos();
+            // setLoading(false);
             return () => {};
         }, [])
     );
+
+    useEffect(() => {
+        fetchEventos();
+    }, []);
     
     const handleLoadMore = async () => {
         if (!loading && hasMore) {
-            await fetchTickets(page);
+            setTickets([]);
+            await fetchTickets(page, false, selectedEvento);
         }
     }
 
@@ -116,7 +148,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
             if (response.status === 200) {
                 showToastOk();
                 setRefreshing(true); 
-                fetchTickets(1, true); 
+                fetchTickets(1, true, selectedEvento); 
                 setRefreshing(false); 
             } else {
                 showToastError();
@@ -128,17 +160,43 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
     }
 
     const handleRefresh = async () => {
-        setRefreshing(true);
-        setLoading(true);
-        await fetchTickets(1, true);
-        setLoading(false);
+        if (selectedEvento === null) {
+            setTickets([]);
+            Toast.show({
+                type: 'error',
+                text1: 'Atención!',
+                text2: 'Debe seleccionar un evento'
+            });
+        } else {
+            setRefreshing(true);
+            setLoading(true);
+            await fetchTickets(1, true, selectedEvento);
+            setLoading(false);
+        }
+        
+    }
+
+    const handleChangeDropdown = (value: string | null) => {
+        setSelectedEvento(value);
+        if (value !== null) {
+            fetchTickets(page, true, value);
+        }
     }
 
     return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#212529' }}>
-            {
+            <View>
+                <CustomDrowpdown 
+                    items={eventos}
+                    defaultValue={null}
+                    onValueChange={handleChangeDropdown}
+                    placeholder='Seleccione el evento'
+                />
+            </View>
+            
+            {/* {
                 loading ? 
-                <SpinnerLoader /> : 
+                <SpinnerLoader /> :  */}
 
                 <FlatList<ListItem>
                     data={tickets}
@@ -260,7 +318,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
                     onEndReached={() => handleLoadMore()}
                     onEndReachedThreshold={0.5}
                 />
-            }
+            {/* }  */}
         </View>
     )
 }
