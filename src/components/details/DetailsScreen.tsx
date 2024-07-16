@@ -136,6 +136,10 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ navigation }) => {
             return <CardItem item={item} checkSalidaTicket={checkSalidaTicket}/>
         } else if (item.apellidoP.toLowerCase().includes(userInput.toLowerCase())) {
            return  <CardItem item={item} checkSalidaTicket={checkSalidaTicket}/>
+        } else if (item.apellidoM.toLowerCase().includes(userInput.toLowerCase())) {
+            return <CardItem item={item} checkSalidaTicket={checkSalidaTicket} />
+        } else if (item.nombres.toLowerCase().includes(userInput.toLowerCase())) {
+            return <CardItem item={item} checkSalidaTicket={checkSalidaTicket} />
         }
         return null;
     }
