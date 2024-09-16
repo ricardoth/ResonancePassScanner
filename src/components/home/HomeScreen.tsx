@@ -6,6 +6,7 @@ import { environment } from '../../environment/environment.dev';
 import { basicAuth } from '../../types/BasicAuth';
 import { Buffer } from 'buffer';
 import { CustomDrowpdown } from '../ui/dropdown/CustomDrowpdown';
+import { SpinnerLoader } from '../ui/spinner/SpinnerLoader';
 
 const URL_EVENTOS = environment.URL_API_DECIMATIO + "Evento";
 const userBasicAuth: string = basicAuth.username;
@@ -15,8 +16,10 @@ const passBasicAuth: string = basicAuth.password;
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
     const [eventos, setEventos] = useState([]);
     const [ selectedEvento, setSelectedEvento ] = useState<string | null>('');
+    const [loading, setLoading] = useState(false);
 
     const fetchEventos = async () => {
+        setLoading(true);
         try {
             let response = await axios.get(URL_EVENTOS, {
                 headers: {
@@ -33,8 +36,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
             }));
 
             setEventos(newOptions);
+            setLoading(false);
         } catch (error) {
             console.log(error)
+            setLoading(false);
         }
     }
 
@@ -58,12 +63,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
         <Text style={styles.textEvento}>Seleccione un Evento</Text>
 
         <View style={{  alignItems: 'center', justifyContent: 'center' }}>
-            <CustomDrowpdown 
-                items={eventos}
-                defaultValue={null}
-                onValueChange={handleValueChange}
-                placeholder='Seleccione'
-            />
+            {
+                loading? <SpinnerLoader /> :
+                <CustomDrowpdown 
+                    items={eventos}
+                    defaultValue={null}
+                    onValueChange={handleValueChange}
+                    placeholder='Seleccione'
+                />
+            }
+            
         </View>
 
         <TouchableOpacity 
