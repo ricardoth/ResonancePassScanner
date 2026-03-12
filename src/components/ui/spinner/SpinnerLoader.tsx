@@ -1,22 +1,23 @@
-import { HStack, Spinner } from '@gluestack-ui/themed'
 import React from 'react'
-import { StyleSheet, Text } from 'react-native'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { Colors, Spacing, Typography } from '../../../theme/theme';
 
 export const SpinnerLoader = () => {
     return (
-        <HStack >
-            <Spinner size={'large'}/>
-            <Text style={styles.heading}>Cargando...</Text>
-        </HStack> 
-    )
+        <View style={styles.container}>
+            <ActivityIndicator size="large" color={Colors.brandPrimary} />
+            <Text style={styles.text}>Cargando...</Text>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-    heading: {
-        fontSize: 18, 
-        fontFamily: 'Helvetica', 
-        marginBottom: 12, 
-        color: '#fff'
+    container: {
+        alignItems: 'center',
+        gap: Spacing.sm,
     },
-     
+    text: {
+        ...Typography.body,
+        color: Colors.textSecondary,
+    },
 });

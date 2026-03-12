@@ -34,6 +34,13 @@ local.properties
 *.keystore
 !debug.keystore
 
+# Android build outputs
+android/app/build/
+android/build/
+android/.gradle/
+android/temurin*/
+
+
 # node.js
 #
 node_modules/

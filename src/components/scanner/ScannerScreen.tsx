@@ -1,171 +1,251 @@
-import React, { useEffect, useState } from 'react'
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native'
-import QRCodeScanner from 'react-native-qrcode-scanner';
-import { decrypAES } from '../../utils/decryptText';
-import { environment } from '../../environment/environment.dev';
+import React, { useEffect, useState } from 'react';
+import {
+    LayoutAnimation,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View,
+} from 'react-native';
 import axios from 'axios';
-import { basicAuth } from '../../types/BasicAuth';
 import { Buffer } from 'buffer';
-import { CustomAlert } from '../ui/alerts/CustomAlert';
+import QRCodeScanner from 'react-native-qrcode-scanner';
+import { environment } from '../../environment/environment.dev';
+import { basicAuth } from '../../types/BasicAuth';
 import { ScannerScreenProps } from '../../types/RootTypes';
+import { decrypAES } from '../../utils/decryptText';
+import { CustomAlert } from '../ui/alerts/CustomAlert';
 import { Toogle } from '../ui/toogle/Toogle';
+import { Colors, Radius, Shadow, Spacing, Typography } from '../../theme/theme';
 
-const key: string = "claveAESparaDerivar";
-const iv: string = "claveAESparaDerivar";
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const AES_KEY = 'claveAESparaDerivar';
 const userBasicAuth: string = basicAuth.username;
 const passBasicAuth: string = basicAuth.password;
-const URL_VALIDAR_ACCESO_TICKET: string = `${environment.URL_API_DECIMATIO}TicketScanner/ValidarAccesoTicket`;
+const URL_VALIDAR = `${environment.URL_API_DECIMATIO}TicketScanner/ValidarAccesoTicket`;
 
-export const ScannerScreen : React.FC<ScannerScreenProps> = ({route, navigation}) => {
-    const [ contentQR, setContentQR ] = useState('');
-    const [isAlertVisible, setIsAlertVisible] = useState<boolean>(false);
+export const ScannerScreen: React.FC<ScannerScreenProps> = ({ route }) => {
+    const [contentQR, setContentQR] = useState('');
+    const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
     const [messageText, setMessageText] = useState('');
-    const [ isActiveCamera, setIsActiveCamera ] = useState(false);
-    const [ isExtranjero, setIsExtranjero ] = useState(false);
+    const [isActiveCamera, setIsActiveCamera] = useState(false);
+    const [isExtranjero, setIsExtranjero] = useState(false);
     const { itemId } = route.params;
 
-    const showSuccessAlert = () => {
-        setAlertType('success');
+    const toggleCamera = (value: boolean) => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsActiveCamera(value);
+    };
+
+    const showAlert = (type: 'success' | 'error', message: string) => {
+        setAlertType(type);
+        setMessageText(message);
         setIsAlertVisible(true);
-      };
-    
-      const showErrorAlert = () => {
-        setAlertType('error');
-        setIsAlertVisible(true);
-      };
+    };
 
     const validarAccesoTicket = async (paramText: string) => {
         try {
-            let body;
-            let obj = JSON.parse(paramText);
+            const obj = JSON.parse(paramText);
+            let body: any;
+
             if (isExtranjero) {
                 body = {
                     idTicket: obj.IdTicket,
                     idEvento: obj.IdEvento,
                     correo: obj.Correo,
-                    esExtranjero: isExtranjero,
-                    dv: ""
+                    esExtranjero: true,
+                    dv: '',
                 };
             } else {
-                let rutDv = obj.RutUsuario;
-                let splitter = rutDv.split('-');
+                const [rut, dv] = obj.RutUsuario.split('-');
                 body = {
                     idTicket: obj.IdTicket,
                     idEvento: obj.IdEvento,
-                    esExtranjero: isExtranjero,
                     correo: obj.Correo,
-                    rut: splitter[0],
-                    dv: splitter[1]
+                    esExtranjero: false,
+                    rut,
+                    dv,
                 };
             }
 
             if (body.idEvento !== itemId) {
-                setMessageText('El Ticket no corresponde al evento, por favor ingrese un ticket válido');
-                showErrorAlert();
-                setIsActiveCamera(false);
-                setContentQR(''); 
+                showAlert('error', 'El Ticket no corresponde al evento, por favor ingrese un ticket válido');
                 return;
             }
 
-            let response = await axios.post(URL_VALIDAR_ACCESO_TICKET, body, {
+            const response = await axios.post(URL_VALIDAR, body, {
                 headers: {
-                    Authorization: `Basic ${Buffer.from(`${userBasicAuth}:${passBasicAuth}`).toString('base64')}`,
-                }
+                    Authorization: `Basic ${Buffer.from(
+                        `${userBasicAuth}:${passBasicAuth}`
+                    ).toString('base64')}`,
+                },
             });
-            const {data} = response.data;
-            setMessageText(data.outputMessage);
-            if (data.statusCode === 1) {
-                showSuccessAlert();
-            } else {
-                showErrorAlert();
-            }
-            setIsActiveCamera(false);
-            setContentQR('');
-        } catch (error: any) {
-            console.log(error)
+
+            const { data } = response.data;
+            showAlert(data.statusCode === 1 ? 'success' : 'error', data.outputMessage);
+        } catch (error) {
+            console.log(error);
         }
-    }
+    };
 
     useEffect(() => {
-        if(contentQR != '') {
-            const decryptado: string | null = decrypAES(contentQR, key);
+        if (contentQR !== '') {
+            // Cerrar la cámara inmediatamente al detectar el QR — feedback instantáneo
+            setIsActiveCamera(false);
+
+            const decryptado = decrypAES(contentQR, AES_KEY);
             if (decryptado === null) {
-                setMessageText("Ha ocurrido un error al leer el QR, debe ser un Ticket de Acceso válido");
-                showErrorAlert();
+                showAlert('error', 'Ha ocurrido un error al leer el QR, debe ser un Ticket de Acceso válido');
+                setContentQR('');
             } else {
-                validarAccesoTicket(decryptado);
+                validarAccesoTicket(decryptado).finally(() => setContentQR(''));
             }
         }
-    }, [ contentQR ])
+    }, [contentQR]);
 
     return (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#212529' }}>
-            <Text style={styles.header}>Scan QR Code Ticket</Text>
+        <View style={styles.container}>
+            {/* Page header */}
+            <View style={styles.header}>
+                <Text style={styles.title}>Escanear Ticket</Text>
+                <Text style={styles.subtitle}>Apunta la cámara al código QR del ticket</Text>
+            </View>
 
-            <Text style={styles.text}>¿Es Extranjero?</Text>
-            <Toogle 
-                isOn={isExtranjero}
-                onToogle={setIsExtranjero}
-                id={"toogleExtranjero"}
-            />
+            {/* Foreign visitor toggle */}
+            <View style={styles.toggleCard}>
+                <View style={styles.toggleRow}>
+                    <View>
+                        <Text style={styles.toggleLabel}>Visitante Extranjero</Text>
+                        <Text style={styles.toggleDescription}>Activa para pasaporte en lugar de RUT</Text>
+                    </View>
+                    <Toogle
+                        isOn={isExtranjero}
+                        onToogle={setIsExtranjero}
+                        id="toogleExtranjero"
+                    />
+                </View>
+            </View>
 
-            {
-                !isActiveCamera && 
-                <TouchableOpacity 
-                    style={styles.button}
-                    onPress={() => setIsActiveCamera(true)}
+            {/* Camera control */}
+            {!isActiveCamera ? (
+                <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={() => toggleCamera(true)}
+                    activeOpacity={0.8}
                 >
-                    <Text>Escanear</Text>
+                    <Text style={styles.primaryButtonText}>Iniciar Escaneo</Text>
                 </TouchableOpacity>
-            }
-
-            {
-                isActiveCamera && 
-                <TouchableOpacity 
-                    style={styles.button}
-                    onPress={() => setIsActiveCamera(false)}
+            ) : (
+                <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => toggleCamera(false)}
+                    activeOpacity={0.8}
                 >
-                    <Text>Volver</Text>
+                    <Text style={styles.secondaryButtonText}>Detener</Text>
                 </TouchableOpacity>
-            }
+            )}
 
-            {
-                isActiveCamera && 
-                <QRCodeScanner 
+            {/* QR Scanner */}
+            {isActiveCamera && (
+                <QRCodeScanner
                     onRead={(e) => setContentQR(e.data)}
                     reactivate={true}
                     reactivateTimeout={500}
                     showMarker={true}
                 />
-            }
+            )}
 
-            <CustomAlert 
+            <CustomAlert
                 isVisible={isAlertVisible}
                 onClose={() => setIsAlertVisible(false)}
                 type={alertType}
                 messageText={messageText}
             />
         </View>
-    )
-}
+    );
+};
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        backgroundColor: Colors.bgPrimary,
+        paddingTop: Spacing.xl,
+    },
     header: {
-        fontSize: 20,
-        color: 'white',
-        fontWeight: 'bold'
+        width: '100%',
+        marginBottom: Spacing.xl,
+        paddingHorizontal: Spacing.lg,
     },
-    text: {
+    title: {
+        ...Typography.h2,
+        marginBottom: Spacing.xs,
+    },
+    subtitle: {
+        ...Typography.body,
+        color: Colors.textSecondary,
+    },
+    toggleCard: {
+        width: '100%',
+        backgroundColor: Colors.bgSurface,
+        borderRadius: Radius.lg,
+        padding: Spacing.lg,
+        marginBottom: Spacing.lg,
+        marginHorizontal: Spacing.lg,
+        borderWidth: 1,
+        borderColor: Colors.bgBorder,
+        ...Shadow.sm,
+    },
+    toggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    toggleLabel: {
         fontSize: 15,
-        color: 'white',
-        marginTop: 30
+        fontWeight: '600',
+        color: Colors.textPrimary,
     },
-    button: {
-        backgroundColor: '#FFCA2C',
-        padding: 10,
-        marginTop: 20,
-        color: 'black',
-        borderRadius: 20
+    toggleDescription: {
+        ...Typography.caption,
+        marginTop: 2,
+    },
+    primaryButton: {
+        backgroundColor: Colors.brandPrimary,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.xl,
+        borderRadius: Radius.md,
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: Spacing.lg,
+        marginHorizontal: Spacing.lg,
+        ...Shadow.brand,
+    },
+    primaryButtonText: {
+        color: Colors.brandText,
+        fontWeight: '700',
+        fontSize: 16,
+    },
+    secondaryButton: {
+        backgroundColor: Colors.bgElevated,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.xl,
+        borderRadius: Radius.md,
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: Spacing.lg,
+        marginHorizontal: Spacing.lg,
+        borderWidth: 1,
+        borderColor: Colors.bgBorderStrong,
+    },
+    secondaryButtonText: {
+        color: Colors.textPrimary,
+        fontWeight: '600',
+        fontSize: 16,
     },
 });

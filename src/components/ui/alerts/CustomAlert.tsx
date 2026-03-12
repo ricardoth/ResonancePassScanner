@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { Button, StyleSheet, View, Text, TouchableOpacity} from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
+import { Colors, Spacing, Radius, Typography, Shadow } from '../../../theme/theme';
 
 interface CustomAlertProps {
     isVisible: boolean;
@@ -9,58 +10,103 @@ interface CustomAlertProps {
     messageText: string;
 }
 
-export const CustomAlert : React.FC<CustomAlertProps> = ({isVisible, onClose, type, messageText}) => {
-    const getMessageAndIcon = () => {
-        switch (type) {
-          case 'success':
-            return { message: messageText, icon: "✅" };
-          case 'error':
-            return { message: messageText, icon: "❌" };
-          default:
-            return { message: messageText, icon: "?" };
-        }
-      };
-    
-      const { message, icon } = getMessageAndIcon();
-    
+const ALERT_CONFIG = {
+    success: {
+        icon: '✅',
+        accentColor: Colors.statusValid,
+        borderColor: Colors.statusValidBorder,
+        bgColor: Colors.statusValidBg,
+    },
+    error: {
+        icon: '❌',
+        accentColor: Colors.statusError,
+        borderColor: Colors.statusErrorBorder,
+        bgColor: Colors.statusErrorBg,
+    },
+};
+
+export const CustomAlert: React.FC<CustomAlertProps> = ({
+    isVisible,
+    onClose,
+    type,
+    messageText,
+}) => {
+    const config = ALERT_CONFIG[type] ?? ALERT_CONFIG.error;
+
     return (
-        <Modal isVisible={isVisible} onBackdropPress={onClose}>
+        <Modal
+            isVisible={isVisible}
+            onBackdropPress={onClose}
+            backdropColor={Colors.overlay}
+            backdropOpacity={1}
+            animationIn="zoomIn"
+            animationOut="zoomOut"
+            animationInTiming={200}
+            animationOutTiming={200}
+        >
             <View style={styles.modalContent}>
-              <Text style={styles.icon}>{icon}</Text>
-              <Text style={styles.message}>{message}</Text>
-              <TouchableOpacity 
-                    style={styles.button}
-                    onPress={onClose}
+                <View
+                    style={[
+                        styles.iconContainer,
+                        { borderColor: config.borderColor, backgroundColor: config.bgColor },
+                    ]}
                 >
-                    <Text>OK</Text>
+                    <Text style={styles.icon}>{config.icon}</Text>
+                </View>
+
+                <Text style={styles.message}>{messageText}</Text>
+
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: config.accentColor }]}
+                    onPress={onClose}
+                    activeOpacity={0.8}
+                >
+                    <Text style={styles.buttonText}>Entendido</Text>
                 </TouchableOpacity>
             </View>
         </Modal>
     );
-}
+};
 
 const styles = StyleSheet.create({
     modalContent: {
-      backgroundColor: 'white',
-      padding: 22,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderRadius: 4,
-      borderColor: 'rgba(0, 0, 0, 0.1)',
+        backgroundColor: Colors.bgSurface,
+        padding: Spacing.xl,
+        borderRadius: Radius.xl,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: Colors.bgBorder,
+        ...Shadow.md,
+    },
+    iconContainer: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        marginBottom: Spacing.lg,
     },
     icon: {
-      fontSize: 48,
-      marginBottom: 16,
+        fontSize: 36,
     },
     message: {
-      fontSize: 16,
-      marginBottom: 20,
+        ...Typography.bodyLg,
+        textAlign: 'center',
+        marginBottom: Spacing.xl,
+        color: Colors.textSecondary,
+        lineHeight: 24,
     },
     button: {
-      backgroundColor: '#FFCA2C',
-      padding: 10,
-      marginTop: 20,
-      color: 'black',
-      borderRadius: 20
-  },
-  });
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.xxl,
+        borderRadius: Radius.md,
+        width: '100%',
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: Colors.bgPrimary,
+        fontWeight: '700',
+        fontSize: 15,
+    },
+});

@@ -1,24 +1,28 @@
-import { Switch } from "react-native";
+import React from 'react';
+import { Switch } from 'react-native';
+import { Colors } from '../../../theme/theme';
 
 interface ToogleProps {
-    isOn: any;
-    onToogle: any;
-    id: any;
+    isOn: boolean;
+    onToogle: (updater: (prev: boolean) => boolean) => void;
+    id: string;
 }
 
-export const Toogle: React.FC<ToogleProps> = ({isOn, onToogle, id}) => {
+export const Toogle: React.FC<ToogleProps> = ({ isOn, onToogle }) => {
     const handleChange = () => {
-        onToogle((prev: any) => !prev);
-    }
+        onToogle((prev: boolean) => !prev);
+    };
 
     return (
-        <>
-            <Switch 
-                id={id}
-                value={isOn}
-                onValueChange={handleChange}
-
-            />
-        </>
-    )
-}
+        <Switch
+            value={isOn}
+            onValueChange={handleChange}
+            trackColor={{
+                false: Colors.bgElevated,
+                true: `${Colors.brandPrimary}80`,
+            }}
+            thumbColor={isOn ? Colors.brandPrimary : Colors.textMuted}
+            ios_backgroundColor={Colors.bgElevated}
+        />
+    );
+};
